@@ -22,6 +22,7 @@ import {
   RotateCw,
   Settings,
   ShieldCheck,
+  Store,
 } from "lucide-react";
 import { useAppMessage } from "../hooks/useAppMessage";
 import AgentSelector from "../components/AgentSelector";
@@ -1053,6 +1054,20 @@ export default function Sidebar({
               <Slot name="sider.bottom" kind="fill" />
             </div>
           </>
+        )}
+
+        {hubMode && authEnabled && !collapsed && (
+          <div className={styles.authActions}>
+            <Button
+              type="text"
+              icon={<Store size={16} />}
+              onClick={() => navigate("/hub/marketplace")}
+              block
+              className={styles.authBtn}
+            >
+              技能市场
+            </Button>
+          </div>
         )}
 
         {authEnabled && hubAdmin && !collapsed && (

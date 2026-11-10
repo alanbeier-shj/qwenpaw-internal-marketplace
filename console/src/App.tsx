@@ -52,6 +52,7 @@ import {
 
 const LoginPage = lazyImportWithRetry("./pages/Login/index");
 const HubPage = lazyImportWithRetry("./pages/Hub/index");
+const MarketplacePage = lazyImportWithRetry("./pages/Hub/MarketplacePage");
 // Desktop OS shell. Uses React.lazy (not lazyImportWithRetry, which only
 // resolves the ./pages/** glob) so it can load from ./os/.
 const DesktopOSPage = lazy(() => import("./os/DesktopOS"));
@@ -528,6 +529,23 @@ function AppInner({
               >
                 <ChunkRecoverySuspense fallback={null}>
                   <HubPage />
+                </ChunkRecoverySuspense>
+              </AuthGuard>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/hub/marketplace"
+          element={
+            hubMode ? (
+              <AuthGuard
+                loadingFallback={loadingFallback}
+                authStatus={backendInfo.authStatus}
+              >
+                <ChunkRecoverySuspense fallback={null}>
+                  <MarketplacePage />
                 </ChunkRecoverySuspense>
               </AuthGuard>
             ) : (

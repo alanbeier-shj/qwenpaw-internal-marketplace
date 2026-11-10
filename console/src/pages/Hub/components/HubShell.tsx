@@ -42,6 +42,7 @@ export default function HubShell(props: Props) {
   const order: Section[] = [
     "overview",
     "runtimes",
+    "marketplace",
     "users",
     "models",
     "credentials",

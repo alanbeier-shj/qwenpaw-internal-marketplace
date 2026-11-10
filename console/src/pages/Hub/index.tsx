@@ -36,6 +36,7 @@ import {
   Settings2,
   ShieldAlert,
   ShieldBan,
+  Store,
   Trash2,
   Users,
 } from "lucide-react";
@@ -43,6 +44,7 @@ import { clearAuthToken } from "../../api/config";
 import { addRouterBasename } from "../../utils/navigationMode";
 import HubShell from "./components/HubShell";
 import OverviewPanel from "./components/OverviewPanel";
+import MarketplacePanel from "./MarketplacePanel";
 import { useTheme } from "../../contexts/ThemeContext";
 import {
   hubApi,
@@ -584,6 +586,11 @@ export default function HubPage() {
       icon: Boxes,
     },
     {
+      id: "marketplace" as const,
+      label: "技能市场",
+      icon: Store,
+    },
+    {
       id: "credentials" as const,
       label: t("hub.navigation.credentials"),
       icon: KeyRound,
@@ -944,6 +951,9 @@ export default function HubPage() {
                   />
                 </DataPanel>
               </section>
+            )}
+            {section === "marketplace" && me && (
+              <MarketplacePanel role={me.role} />
             )}
             {section === "models" && me?.role === "admin" && (
               <OrganizationModels initialModel={sectionTarget} />

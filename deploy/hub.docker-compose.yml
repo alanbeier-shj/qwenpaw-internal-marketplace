@@ -1,0 +1,40 @@
+# First initialization:
+#   cp hub.yaml.example hub.yaml
+#   docker compose -f deploy/hub.docker-compose.yml run --rm \
+#     --entrypoint qwenpaw qwenpaw-hub hub --init-admin admin
+#
+# Then start the Hub:
+#   docker compose -f deploy/hub.docker-compose.yml up -d
+#
+# Build the image first from the repository root:
+#   docker build -f deploy/Dockerfile -t qwenpaw:internal-marketplace .
+
+version: '3.8'
+
+services:
+  qwenpaw-hub:
+    image: qwenpaw:internal-marketplace
+    init: true
+    container_name: qwenpaw-hub
+    restart: always
+    ports:
+      - "8088:8088"
+    environment:
+      QWENPAW_WORKING_DIR: /app/working
+      QWENPAW_HUB_DIR: /app/working/hub
+    volumes:
+      - qwenpaw-hub-data:/app/working
+      - ./hub.yaml:/app/working/hub.yaml:ro
+    command:
+      - qwenpaw
+      - hub
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8088"
+      - --force-public
+      - --config
+      - /app/working/hub.yaml
+
+volumes:
+  qwenpaw-hub-data:

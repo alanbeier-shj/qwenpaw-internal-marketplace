@@ -180,6 +180,23 @@ qwenpaw hub \
 
 ![普通用户的个人运行环境状态与重启入口](https://img.alicdn.com/imgextra/i2/O1CN01q71ewupZntB6lRUM_!!6000000000685-2-tps-3332-1770.png)
 
+## 内网技能市场
+
+Hub 控制台提供“技能市场”，适合在没有外网或需要统一审核的内网环境使用。普通用户和管理员都可以上传一个或多个技能 ZIP，上传后先进入“待审核”状态，不会直接写入任何人的技能池。
+
+管理员可以在“待审核”列表中批量通过或驳回。通过后的技能进入全局发布目录，普通用户可以在技能市场中下载 ZIP，或直接安装到自己的技能池。管理员还可以对已发布技能执行“分发”，把该技能安装到所有已启用用户的环境中。
+
+上传仍复用 QwenPaw 的技能扫描器，ZIP 解压会检查路径穿越和符号链接，审核发布前再次扫描。市场数据保存在 Hub 数据目录下：
+
+```text
+<QWENPAW_WORKING_DIR>/hub/marketplace/
+├── catalog.json
+├── submissions/
+└── published/
+```
+
+备份时应把整个 `hub/` 目录作为一套数据处理，`marketplace/` 会随 `hub/` 一并持久化。
+
 ## 数据保存在哪里
 
 Hub 数据默认保存在 `~/.qwenpaw/hub/`。如果设置了 `QWENPAW_WORKING_DIR`，则保存在 `<QWENPAW_WORKING_DIR>/hub/`。

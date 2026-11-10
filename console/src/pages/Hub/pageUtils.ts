@@ -1,6 +1,7 @@
 import type { HubRuntime } from "../../api/modules/hub";
 
 export type Section =
+  | "marketplace"
   | "models"
   | "overview"
   | "runtimes"

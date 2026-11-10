@@ -1,0 +1,13 @@
+version: 1
+
+control_plane:
+  public_base_url: http://192.168.1.10:8088
+  registration:
+    mode: closed
+    default_role: user
+
+runtime:
+  provisioner: local
+
+capacity:
+  max_running_runtimes: 20

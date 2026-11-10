@@ -95,6 +95,7 @@ from .static_files import (
     resolve_console_static_dir,
 )
 from .invitations import InvitationError, InvitationService
+from .marketplace import MarketplaceStore, build_marketplace_router
 from .model_service.storage import GovernanceStore
 from .model_service.catalog import ModelCatalog
 from .model_service.budget import TokenBudgetService
@@ -563,6 +564,117 @@ def create_hub_app(  # pylint: disable=too-many-statements
             ) from exc
         if record.owner_user_id != user.user_id:
             raise HTTPException(status_code=404, detail="Runtime not found")
+
+    marketplace_store = MarketplaceStore(runtime_service.root_dir)
+
+    async def _post_skill_to_runtime(
+        record: RuntimeRecord,
+        data: bytes,
+        filename: str,
+    ) -> dict[str, Any]:
+        internal_token = await run_in_threadpool(
+            credential_vault.get_runtime_secret,
+            tenant_id=record.tenant_id,
+            runtime_id=record.runtime_id,
+            name="QWENPAW_RUNTIME_INTERNAL_TOKEN",
+        )
+        if internal_token is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Personal runtime boundary token is unavailable",
+            )
+        target = runtime_url(
+            record,
+            scheme="http",
+            path="/api/skills/pool/upload-zip",
+        )
+        proxy_config = effective_config.control_plane.proxy
+        timeout = httpx.Timeout(
+            connect=proxy_config.connect_timeout_seconds,
+            read=120,
+            write=120,
+            pool=proxy_config.connect_timeout_seconds,
+        )
+        async with httpx.AsyncClient(
+            transport=proxy_transport,
+            timeout=timeout,
+        ) as client:
+            response = await client.post(
+                target,
+                headers={
+                    "X-QwenPaw-Runtime-Token": internal_token,
+                },
+                files={
+                    "file": (filename, data, "application/zip"),
+                },
+            )
+        if response.status_code >= 400:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "Personal runtime rejected the skill: "
+                    f"{response.text[:300]}"
+                ),
+            )
+        return response.json()
+
+    async def install_marketplace_skill(
+        user: HubUser,
+        data: bytes,
+        filename: str,
+    ) -> dict[str, Any]:
+        record = await ensure_personal_runtime(user)
+        result = await _post_skill_to_runtime(record, data, filename)
+        return {
+            "installed": True,
+            "runtime_id": record.runtime_id,
+            "result": result,
+        }
+
+    async def broadcast_marketplace_skill(
+        admin: HubUser,
+        data: bytes,
+        filename: str,
+    ) -> dict[str, Any]:
+        records = await run_in_threadpool(runtime_service.registry.list, None)
+        results: dict[str, Any] = {"installed": [], "failed": []}
+        for record in records:
+            owner = await run_in_threadpool(
+                hub_auth.get_user,
+                record.owner_user_id,
+            )
+            if owner is None or owner.disabled:
+                continue
+            try:
+                runtime = await ensure_personal_runtime(owner)
+                await _post_skill_to_runtime(runtime, data, filename)
+                results["installed"].append(
+                    {
+                        "user_id": owner.user_id,
+                        "username": owner.username,
+                        "runtime_id": runtime.runtime_id,
+                    },
+                )
+            except Exception as exc:  # pylint: disable=broad-except
+                results["failed"].append(
+                    {
+                        "user_id": owner.user_id,
+                        "username": owner.username,
+                        "error": str(exc),
+                    },
+                )
+        return results
+
+    app.include_router(
+        build_marketplace_router(
+            marketplace_store,
+            require_user=require_user,
+            require_admin=require_admin,
+            record_audit=record_audit,
+            install_skill=install_marketplace_skill,
+            broadcast_skill=broadcast_marketplace_skill,
+        ),
+    )
 
     app.include_router(
         governance_router(
